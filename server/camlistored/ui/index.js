@@ -213,6 +213,7 @@ cam.IndexPage = React.createClass({
 		}
 		return cam.NavReact({key:'nav', ref:'nav', timer:this.props.timer, open:this.state.isNavOpen, onOpen:this.handleNavOpen_, onClose:this.handleNavClose_}, [
 			cam.NavReact.SearchItem({key:'search', ref:'search', iconSrc:'magnifying_glass.svg', onSearch:this.setSearch_}, 'Search'),
+			this.getAddTagsToSelectionItem_(),
 			this.getCreateSetWithSelectionItem_(),
 			cam.NavReact.Item({key:'roots', iconSrc:'icon_27307.svg', onClick:this.handleShowSearchRoots_}, 'Search roots'),
 			this.getSelectAsCurrentSetItem_(),
@@ -232,6 +233,12 @@ cam.IndexPage = React.createClass({
 	handleNavClose_: function() {
 		this.refs.search.clear();
 		this.refs.search.blur();
+
+		if(this.refs.addTagsToSelectedItems) {
+			this.refs.addTagsToSelectedItems.clear();
+			this.refs.addTagsToSelectedItems.blur();
+		}
+
 		this.setState({isNavOpen:false});
 	},
 
@@ -367,6 +374,49 @@ cam.IndexPage = React.createClass({
 		this.navigator_.navigate(searchURL);
 	},
 
+	setAddTagsToSelectedItems_: function(rawTagString) {
+		var blobrefs = goog.object.getKeys(this.state.selection);
+		var allTags = rawTagString.split(',');
+
+		var numProcessed = 0;
+		// var numTotal = (blobrefs.length * allTags.length); // num combinations
+
+		var addAttrOperations = new Array();
+		blobrefs.forEach(function(permanode) {
+			allTags.forEach( function(tag) {
+
+				// TODO:(mrusso) if we want to trim leading/trailing spaces we should consider moving to persistence layer
+				var tidyTag = tag.trim();
+				addAttrOperations.push( {'permanode': permanode, 'tag': tidyTag } );
+			});
+		});
+
+		addAttrOperations.forEach(function(addAttr) {
+			console.log('processing node: ' + addAttr.permanode + ', tag: ' + addAttr.tag);
+			this.props.serverConnection.newAddAttributeClaim(addAttr.permanode, 'tag', addAttr.tag, function() {
+				if (++numProcessed == addAttrOperations.length) {
+					this.setState({selection:{}});
+					this.searchSession_.refreshIfNecessary();
+				}
+			}.bind(this));
+		}.bind(this));
+
+		// blobrefs.forEach(function(permanode) {
+
+		// 	allTags.forEach( function(tag) {
+
+
+		// 		console.log('processing node: ' + permanode + ', tag: ' + tidyTag);
+		// 		this.props.serverConnection.newAddAttributeClaim(permanode, 'tag', tidyTag, function() {
+		// 			if (++numProcessed == numTotal) {
+		// 				this.setState({selection:{}});
+		// 				this.searchSession_.refreshIfNecessary();
+		// 			}
+		// 		}.bind(this));
+		// 	}.bind(this));
+		// }.bind(this));
+	},
+
 	getSelectAsCurrentSetItem_: function() {
 		if (goog.object.getCount(this.state.selection) != 1) {
 			return null;
@@ -385,6 +435,21 @@ cam.IndexPage = React.createClass({
 			return null;
 		}
 		return cam.NavReact.Item({key:'addtoset', iconSrc:'icon_16716.svg', onClick:this.handleAddToSet_}, 'Add to current set');
+	},
+
+	getAddTagsToSelectionItem_: function() {
+		if (!goog.object.getAnyKey(this.state.selection)) {
+			return null;
+		}
+
+		var numItems = goog.object.getCount(this.state.selection);
+		var label = 'Add Tag(s) to ';
+		if (numItems == 1) {
+			label += 'item';
+		} else if (numItems > 1) {
+			label += goog.string.subs('%s items', numItems);
+		}
+		return cam.NavReact.AddTagsItem({key:'addtagstoselection', ref: 'addTagsToSelectedItems', iconSrc:'circled_plus.svg', onSearch:this.setAddTagsToSelectedItems_, onClick:this.handleAddTagsToSelectedItems_}, label);
 	},
 
 	getCreateSetWithSelectionItem_: function() {

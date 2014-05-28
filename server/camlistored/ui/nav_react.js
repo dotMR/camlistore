@@ -18,6 +18,7 @@ goog.provide('cam.NavReact');
 goog.provide('cam.NavReact.Item');
 goog.provide('cam.NavReact.LinkItem');
 goog.provide('cam.NavReact.SearchItem');
+goog.provide('cam.NavReact.AddTagsItem');
 
 goog.require('goog.events.KeyCodes');
 
@@ -118,6 +119,62 @@ cam.NavReact.Item = React.createClass(cam.reactUtil.extend(cam.NavReact.ItemBase
 				onClick: this.props.onClick
 			}), this.props.children);
 	},
+}));
+
+cam.NavReact.AddTagsItem = React.createClass(cam.reactUtil.extend(cam.NavReact.ItemBase, {
+	propTypes: {
+		value: React.PropTypes.string,
+		onSearch: React.PropTypes.func.isRequired,
+	},
+
+	getDefaultProps: function() {
+		return {
+			value: '',
+		}
+	},
+
+	render: function() {
+		if (!goog.isString(this.props.children)) {
+			throw new Error('Children of cam.NavReact.AddTagsItem must be a single string.');
+		}
+
+		return React.DOM.div(this.getRootProps_('cam-nav-searchitem'),
+			React.DOM.form({onClick:this.focus, onSubmit:this.handleSubmit_},
+				React.DOM.input({
+					ref:'input',
+					placeholder:this.props.children,
+					defaultValue: this.props.value,
+					onChange: this.handleChange_,
+					onMouseEnter: this.focus,
+				})
+			)
+		);
+	},
+
+	focus: function() {
+		this.getInputNode_().focus();
+	},
+
+	blur: function() {
+		this.getInputNode_().blur();
+	},
+
+	clear: function() {
+		this.getInputNode_().value = '';
+	},
+
+	getInputNode_: function() {
+		return this.refs.input.getDOMNode();
+	},
+
+	getTagValues: function() {
+		return this.getInputNode_().value;
+	},
+
+	handleSubmit_: function(e) {
+		this.props.onSearch(this.getInputNode_().value);
+		e.preventDefault();
+	}
 }));
 
 
