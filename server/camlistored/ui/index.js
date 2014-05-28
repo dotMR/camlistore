@@ -379,42 +379,25 @@ cam.IndexPage = React.createClass({
 		var allTags = rawTagString.split(',');
 
 		var numProcessed = 0;
-		// var numTotal = (blobrefs.length * allTags.length); // num combinations
-
-		var addAttrOperations = new Array();
+		var addAttrClaims = new Array();
 		blobrefs.forEach(function(permanode) {
-			allTags.forEach( function(tag) {
+			allTags.forEach(function(tag) {
 
 				// TODO:(mrusso) if we want to trim leading/trailing spaces we should consider moving to persistence layer
-				var tidyTag = tag.trim();
-				addAttrOperations.push( {'permanode': permanode, 'tag': tidyTag } );
+				var tidyTagVal = tag.trim();
+				addAttrClaims.push( {'permanode': permanode, 'tag': tidyTagVal } );
 			});
 		});
 
-		addAttrOperations.forEach(function(addAttr) {
-			console.log('processing node: ' + addAttr.permanode + ', tag: ' + addAttr.tag);
-			this.props.serverConnection.newAddAttributeClaim(addAttr.permanode, 'tag', addAttr.tag, function() {
-				if (++numProcessed == addAttrOperations.length) {
+		addAttrClaims.forEach(function(addTagClaim) {
+			console.log('processing permanode: ' + addTagClaim.permanode + ', tag: ' + addTagClaim.tag);
+			this.props.serverConnection.newAddAttributeClaim(addTagClaim.permanode, 'tag', addTagClaim.tag, function() {
+				if (++numProcessed == addAttrClaims.length) {
 					this.setState({selection:{}});
 					this.searchSession_.refreshIfNecessary();
 				}
 			}.bind(this));
 		}.bind(this));
-
-		// blobrefs.forEach(function(permanode) {
-
-		// 	allTags.forEach( function(tag) {
-
-
-		// 		console.log('processing node: ' + permanode + ', tag: ' + tidyTag);
-		// 		this.props.serverConnection.newAddAttributeClaim(permanode, 'tag', tidyTag, function() {
-		// 			if (++numProcessed == numTotal) {
-		// 				this.setState({selection:{}});
-		// 				this.searchSession_.refreshIfNecessary();
-		// 			}
-		// 		}.bind(this));
-		// 	}.bind(this));
-		// }.bind(this));
 	},
 
 	getSelectAsCurrentSetItem_: function() {
@@ -449,7 +432,8 @@ cam.IndexPage = React.createClass({
 		} else if (numItems > 1) {
 			label += goog.string.subs('%s items', numItems);
 		}
-		return cam.NavReact.AddTagsItem({key:'addtagstoselection', ref: 'addTagsToSelectedItems', iconSrc:'circled_plus.svg', onSearch:this.setAddTagsToSelectedItems_, onClick:this.handleAddTagsToSelectedItems_}, label);
+		// TODO (mrusso): would be nice to provide a type-ahead style query that lists currently used tags
+		return cam.NavReact.AddTagsItem({key:'addtagstoselection', ref: 'addTagsToSelectedItems', iconSrc:'circled_plus.svg', onSearch:this.setAddTagsToSelectedItems_}, label);
 	},
 
 	getCreateSetWithSelectionItem_: function() {
